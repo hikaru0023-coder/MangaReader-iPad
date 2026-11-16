@@ -2,10 +2,6 @@ name: Build MangaReader iPad IPA
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'source-bundle/**'
 
 concurrency:
   group: mangareader-ipad-ipa
