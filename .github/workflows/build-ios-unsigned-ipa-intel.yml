@@ -7,6 +7,7 @@ on:
     paths:
       - 'source-bundle/**'
       - '.github/workflows/build-ios-unsigned-ipa-intel.yml'
+      - 'scripts/fix-reader-zoom.py'
 
 concurrency:
   group: mangareader-ipad-ipa-macos26-intel
@@ -43,6 +44,11 @@ jobs:
           test -d "$PROJECT_DIR/MangaReader-iPad.xcodeproj"
           test -f "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Fix pinch zoom-out and two-finger pan handling
+        run: |
+          set -euo pipefail
+          python3 "$GITHUB_WORKSPACE/scripts/fix-reader-zoom.py" "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
 
       - name: Resolve Swift package dependencies
         run: |
