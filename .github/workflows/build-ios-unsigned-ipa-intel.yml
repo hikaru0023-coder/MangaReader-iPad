@@ -55,16 +55,8 @@ jobs:
           source = Path(sys.argv[1])
           text = source.read_text()
 
-          old_layout = """            .ignoresSafeArea()
-            .coordinateSpace(name: "reader")
-            .statusBarHidden(true)
-        }
-        .task { await prepareArchive() }"""
-          new_layout = """            .coordinateSpace(name: "reader")
-            .statusBarHidden(true)
-        }
-        .ignoresSafeArea()
-        .task { await prepareArchive() }"""
+          old_layout = "            .ignoresSafeArea()\n            .coordinateSpace(name: \"reader\")\n            .statusBarHidden(true)\n        }\n        .task { await prepareArchive() }"
+          new_layout = "            .coordinateSpace(name: \"reader\")\n            .statusBarHidden(true)\n        }\n        .ignoresSafeArea()\n        .task { await prepareArchive() }"
           if old_layout not in text:
               raise SystemExit("ReaderView safe-area layout did not match expected source; refusing a partial patch.")
           text = text.replace(old_layout, new_layout, 1)
