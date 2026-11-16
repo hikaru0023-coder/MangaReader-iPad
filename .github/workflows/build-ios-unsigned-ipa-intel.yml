@@ -1,4 +1,4 @@
-name: Build MangaReader iPad IPA (Intel fallback)
+name: Build MangaReader iPad IPA (macOS 26 Intel)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-ios-unsigned-ipa-intel.yml'
 
 concurrency:
-  group: mangareader-ipad-ipa-intel
+  group: mangareader-ipad-ipa-macos26-intel
   cancel-in-progress: false
 
 permissions:
@@ -17,15 +17,15 @@ permissions:
 
 jobs:
   build:
-    name: Build unsigned iPad IPA on Intel macOS
-    runs-on: macos-15-intel
+    name: Build unsigned iPad IPA on macOS 26 Intel
+    runs-on: macos-26-intel
     timeout-minutes: 45
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Confirm Intel macOS runner and Xcode
+      - name: Confirm macOS 26 Intel runner and Xcode
         run: |
           set -euo pipefail
           sw_vers
