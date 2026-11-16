@@ -1,0 +1,100 @@
+name: Build MangaReader iPad IPA (Intel fallback)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'source-bundle/**'
+      - '.github/workflows/build-ios-unsigned-ipa-intel.yml'
+
+concurrency:
+  group: mangareader-ipad-ipa-intel
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build unsigned iPad IPA on Intel macOS
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Confirm Intel macOS runner and Xcode
+        run: |
+          set -euo pipefail
+          sw_vers
+          uname -m
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Restore Xcode project source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mangareader-source"
+          cat source-bundle/part-*.txt | base64 --decode | tar -xz -C "$RUNNER_TEMP/mangareader-source"
+          PROJECT_DIR="$RUNNER_TEMP/mangareader-source/MangaReader-iPad"
+          test -d "$PROJECT_DIR/MangaReader-iPad.xcodeproj"
+          test -f "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Resolve Swift package dependencies
+        run: |
+          set -euo pipefail
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT_DIR/MangaReader-iPad.xcodeproj" \
+            -scheme MangaReader-iPad
+
+      - name: Archive for iPadOS
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project "$PROJECT_DIR/MangaReader-iPad.xcodeproj" \
+            -scheme MangaReader-iPad \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/MangaReader-iPad.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee "$RUNNER_TEMP/xcodebuild-archive.log"
+
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/MangaReader-iPad.xcarchive/Products/Applications/MangaReader-iPad.app"
+          PACKAGE_DIR="$RUNNER_TEMP/ipa-package"
+          OUTPUT_DIR="$GITHUB_WORKSPACE/build-output"
+          test -d "$APP_PATH" || {
+            echo "App bundle missing at: $APP_PATH"
+            find "$RUNNER_TEMP/MangaReader-iPad.xcarchive/Products" -maxdepth 4 -print || true
+            exit 1
+          }
+          rm -rf "$PACKAGE_DIR" "$OUTPUT_DIR"
+          mkdir -p "$PACKAGE_DIR/Payload" "$OUTPUT_DIR"
+          ditto "$APP_PATH" "$PACKAGE_DIR/Payload/MangaReader-iPad.app"
+          cd "$PACKAGE_DIR"
+          /usr/bin/zip -qry "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa" Payload
+          test -s "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa"
+          shasum -a 256 "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa" > "$OUTPUT_DIR/SHA256.txt"
+          cat > "$OUTPUT_DIR/INSTALL-NOTE.txt" <<'NOTE'
+          This is an unsigned IPA. It still needs to be signed for installation.
+          Use a trusted Windows sideloading tool with your own Apple Account.
+          Never upload Apple Account passwords, certificates, or provisioning profiles to this public repository.
+          NOTE
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MangaReader-iPad-unsigned-IPA-Intel
+          path: build-output/
+          if-no-files-found: error
+          retention-days: 14
