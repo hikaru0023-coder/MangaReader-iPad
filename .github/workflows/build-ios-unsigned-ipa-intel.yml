@@ -85,6 +85,7 @@ jobs:
           /usr/bin/zip -qry "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa" Payload
           test -s "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa"
           shasum -a 256 "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa" > "$OUTPUT_DIR/SHA256.txt"
+          cp "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift" "$OUTPUT_DIR/MangaReaderApp.swift"
           cat > "$OUTPUT_DIR/INSTALL-NOTE.txt" <<'NOTE'
           This is an unsigned IPA. It still needs to be signed for installation.
           Use a trusted Windows sideloading tool with your own Apple Account.
