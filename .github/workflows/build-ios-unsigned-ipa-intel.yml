@@ -8,6 +8,7 @@ on:
       - 'source-bundle/**'
       - '.github/workflows/build-ios-unsigned-ipa-intel.yml'
       - 'scripts/fix-reader-zoom.py'
+      - 'overlay/wifi-lzma-*.txt'
 
 concurrency:
   group: mangareader-ipad-ipa-macos26-intel
@@ -49,6 +50,44 @@ jobs:
         run: |
           set -euo pipefail
           python3 "$GITHUB_WORKSPACE/scripts/fix-reader-zoom.py" "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
+
+      - name: Restore and install Wi-Fi transfer feature
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wifi-overlay"
+          python3 - <<'PY'
+          import base64
+          import io
+          import lzma
+          import os
+          import tarfile
+          from pathlib import Path
+
+          root = Path(os.environ["GITHUB_WORKSPACE"])
+          chunks = [
+              root / "overlay/wifi-lzma-00.txt",
+              root / "overlay/wifi-lzma-01.txt",
+              root / "overlay/wifi-lzma-02.txt",
+              root / "overlay/wifi-lzma-03.txt",
+          ]
+          encoded = "".join(p.read_text().strip() for p in chunks)
+          archive = lzma.decompress(base64.b64decode(encoded, validate=True))
+          expected = {"WiFiTransferServer.swift", "add-wifi-transfer.py"}
+          with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as tar:
+              members = {Path(m.name).name: m for m in tar.getmembers() if m.isfile()}
+              if set(members) != expected:
+                  raise SystemExit(f"Unexpected Wi-Fi overlay files: {sorted(members)}")
+              output = Path(os.environ["RUNNER_TEMP"]) / "wifi-overlay"
+              for name in sorted(expected):
+                  stream = tar.extractfile(members[name])
+                  if stream is None:
+                      raise SystemExit(f"Missing archived payload: {name}")
+                  (output / name).write_bytes(stream.read())
+          print("Restored PIN-protected Wi-Fi transfer overlay.")
+          PY
+          python3 "$RUNNER_TEMP/wifi-overlay/add-wifi-transfer.py" \
+            "$PROJECT_DIR" "$RUNNER_TEMP/wifi-overlay/WiFiTransferServer.swift"
 
       - name: Resolve Swift package dependencies
         run: |
@@ -92,6 +131,7 @@ jobs:
           test -s "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa"
           shasum -a 256 "$OUTPUT_DIR/MangaReader-iPad-unsigned.ipa" > "$OUTPUT_DIR/SHA256.txt"
           cp "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift" "$OUTPUT_DIR/MangaReaderApp.swift"
+          cp "$PROJECT_DIR/MangaReader-iPad/WiFiTransferServer.swift" "$OUTPUT_DIR/WiFiTransferServer.swift"
           cat > "$OUTPUT_DIR/INSTALL-NOTE.txt" <<'NOTE'
           This is an unsigned IPA. It still needs to be signed for installation.
           Use a trusted Windows sideloading tool with your own Apple Account.
