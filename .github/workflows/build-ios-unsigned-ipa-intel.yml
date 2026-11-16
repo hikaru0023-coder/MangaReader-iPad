@@ -8,6 +8,7 @@ on:
       - 'source-bundle/**'
       - '.github/workflows/build-ios-unsigned-ipa-intel.yml'
       - 'scripts/fix-reader-zoom.py'
+      - 'scripts/add-wifi-transfer.py'
       - 'overlay/wifi-lzma-*.txt'
 
 concurrency:
@@ -86,7 +87,7 @@ jobs:
                   (output / name).write_bytes(stream.read())
           print("Restored PIN-protected Wi-Fi transfer overlay.")
           PY
-          python3 "$RUNNER_TEMP/wifi-overlay/add-wifi-transfer.py" \
+          python3 "$GITHUB_WORKSPACE/scripts/add-wifi-transfer.py" \
             "$PROJECT_DIR" "$RUNNER_TEMP/wifi-overlay/WiFiTransferServer.swift"
 
       - name: Resolve Swift package dependencies
