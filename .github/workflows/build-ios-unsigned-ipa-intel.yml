@@ -44,6 +44,41 @@ jobs:
           test -f "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
+      - name: Fix reader full-screen safe-area sizing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1])
+          text = source.read_text()
+
+          old_layout = """            .ignoresSafeArea()
+            .coordinateSpace(name: "reader")
+            .statusBarHidden(true)
+        }
+        .task { await prepareArchive() }"""
+          new_layout = """            .coordinateSpace(name: "reader")
+            .statusBarHidden(true)
+        }
+        .ignoresSafeArea()
+        .task { await prepareArchive() }"""
+          if old_layout not in text:
+              raise SystemExit("ReaderView safe-area layout did not match expected source; refusing a partial patch.")
+          text = text.replace(old_layout, new_layout, 1)
+
+          old_top_inset = ".padding(.top, max(geometry.safeAreaInsets.top, 12) + 8)"
+          new_top_inset = ".padding(.top, max(geometry.safeAreaInsets.top, 24) + 8)"
+          if old_top_inset not in text:
+              raise SystemExit("Reader toolbar inset did not match expected source; refusing a partial patch.")
+          text = text.replace(old_top_inset, new_top_inset, 1)
+
+          source.write_text(text)
+          print("Applied full-screen GeometryReader safe-area correction.")
+          PY
+
       - name: Resolve Swift package dependencies
         run: |
           set -euo pipefail
