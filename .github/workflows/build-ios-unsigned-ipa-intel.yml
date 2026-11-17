@@ -10,6 +10,7 @@ on:
       - 'scripts/fix-reader-zoom.py'
       - 'scripts/add-wifi-transfer.py'
       - 'scripts/add-horizontal-page-scrub.py'
+      - 'scripts/add-night-reading-mode.py'
       - 'overlay/wifi-lzma-*.txt'
 
 concurrency:
@@ -95,6 +96,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 "$GITHUB_WORKSPACE/scripts/add-horizontal-page-scrub.py" "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
+
+      - name: Enable automatic low-blue-light night reading mode
+        run: |
+          set -euo pipefail
+          python3 "$GITHUB_WORKSPACE/scripts/add-night-reading-mode.py" "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
 
       - name: Resolve Swift package dependencies
         run: |
