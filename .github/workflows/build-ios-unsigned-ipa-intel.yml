@@ -9,6 +9,7 @@ on:
       - '.github/workflows/build-ios-unsigned-ipa-intel.yml'
       - 'scripts/fix-reader-zoom.py'
       - 'scripts/add-wifi-transfer.py'
+      - 'scripts/add-horizontal-page-scrub.py'
       - 'overlay/wifi-lzma-*.txt'
 
 concurrency:
@@ -89,6 +90,11 @@ jobs:
           PY
           python3 "$GITHUB_WORKSPACE/scripts/add-wifi-transfer.py" \
             "$PROJECT_DIR" "$RUNNER_TEMP/wifi-overlay/WiFiTransferServer.swift"
+
+      - name: Add horizontal page scrubbing and bottom progress bar
+        run: |
+          set -euo pipefail
+          python3 "$GITHUB_WORKSPACE/scripts/add-horizontal-page-scrub.py" "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
 
       - name: Resolve Swift package dependencies
         run: |
