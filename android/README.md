@@ -7,3 +7,5 @@ The GitHub Actions workflow `.github/workflows/build-android-apk.yml` restores t
 When the workflow succeeds, open the repository's Actions tab, select **Build MangaReader Android APK**, and download the artifact named **MangaReader-v1.1.2-APK**.
 
 The generated APK is debug-signed for direct testing on Android devices. It is not a Play Store release build.
+
+Build source snapshot committed for cloud APK build.
