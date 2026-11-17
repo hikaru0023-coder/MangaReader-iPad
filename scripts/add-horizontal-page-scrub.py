@@ -58,7 +58,7 @@ progress_overlay = """                if showsSwipeProgress && !readingPages.isE
                         Spacer()
                         VStack(spacing: 8) {
                             HStack(spacing: 12) {
-                                Text("第 \\\\(swipeTargetPage + 1) / \\\\(readingPages.count) 頁")
+                                Text("第 \\(swipeTargetPage + 1) / \\(readingPages.count) 頁")
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
                                     .monospacedDigit()
                                 Spacer()
