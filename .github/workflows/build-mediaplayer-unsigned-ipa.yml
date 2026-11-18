@@ -37,13 +37,15 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
+          import os
           from pathlib import Path
-          p = Path("$RUNNER_TEMP/mediaplayer-source/MediaPlayer_iPad/MediaPlayer/PlayerScreen.swift")
+          p = Path(os.environ["RUNNER_TEMP"]) / "mediaplayer-source/MediaPlayer_iPad/MediaPlayer/PlayerScreen.swift"
           source = p.read_text()
           source = source.replace("player.time?.intValue", "player.time.intValue")
           source = source.replace("player.position = Float(clamped)", "player.position = clamped")
           p.write_text(source)
           PY
+          grep -n "player.time.intValue\|player.position = clamped" "$RUNNER_TEMP/mediaplayer-source/MediaPlayer_iPad/MediaPlayer/PlayerScreen.swift"
 
       - name: Show Xcode version
         run: xcodebuild -version
