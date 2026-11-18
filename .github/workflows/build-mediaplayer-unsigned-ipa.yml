@@ -27,8 +27,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/mediaplayer-source"
-          base64 --decode MediaPlayer_iPad/source-bundle/MediaPlayer_Source.tar.gz.b64 \
-            | tar -xz -C "$RUNNER_TEMP/mediaplayer-source"
+          base64 -D -i "MediaPlayer_iPad/source-bundle/MediaPlayer_Source.tar.gz.b64" \
+            -o "$RUNNER_TEMP/MediaPlayer_Source.tar.gz"
+          tar -xz -f "$RUNNER_TEMP/MediaPlayer_Source.tar.gz" -C "$RUNNER_TEMP/mediaplayer-source"
           echo "PROJECT_DIR=$RUNNER_TEMP/mediaplayer-source/MediaPlayer_iPad" >> "$GITHUB_ENV"
           test -f "$RUNNER_TEMP/mediaplayer-source/MediaPlayer_iPad/MediaPlayer.xcodeproj/project.pbxproj"
 
