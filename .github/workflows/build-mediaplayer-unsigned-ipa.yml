@@ -116,6 +116,18 @@ jobs:
             exit 1
           fi
 
+          # The source Info.plist omits CFBundleExecutable. Add it before packaging,
+          # then fail the build if it does not point to the actual app binary.
+          if ! /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP_PATH/Info.plist" >/dev/null 2>&1; then
+            /usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string MediaPlayer" "$APP_PATH/Info.plist"
+          fi
+          EXECUTABLE_NAME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP_PATH/Info.plist")
+          if [[ ! -f "$APP_PATH/$EXECUTABLE_NAME" ]]; then
+            echo "CFBundleExecutable '$EXECUTABLE_NAME' does not exist in MediaPlayer.app." >&2
+            exit 1
+          fi
+          echo "Validated CFBundleExecutable=$EXECUTABLE_NAME"
+
           mkdir -p "$RUNNER_TEMP/ipa-root/Payload" "$GITHUB_WORKSPACE/build-output"
           ditto "$APP_PATH" "$RUNNER_TEMP/ipa-root/Payload/MediaPlayer.app"
           (cd "$RUNNER_TEMP/ipa-root" && ditto -c -k --sequesterRsrc --keepParent Payload "$GITHUB_WORKSPACE/build-output/MediaPlayer-unsigned.ipa")
