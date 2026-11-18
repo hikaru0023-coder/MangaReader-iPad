@@ -36,16 +36,49 @@ jobs:
       - name: Apply VLC API compatibility fixes
         shell: bash
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           import os
+          import re
           from pathlib import Path
-          p = Path(os.environ["RUNNER_TEMP"]) / "mediaplayer-source/MediaPlayer_iPad/MediaPlayer/PlayerScreen.swift"
-          source = p.read_text()
-          source = source.replace("player.time?.intValue", "player.time.intValue")
-          source = source.replace("player.position = Float(clamped)", "player.position = clamped")
-          p.write_text(source)
+
+          source_path = (
+              Path(os.environ["RUNNER_TEMP"])
+              / "mediaplayer-source/MediaPlayer_iPad/MediaPlayer/PlayerScreen.swift"
+          )
+          source = source_path.read_text()
+          pattern = (
+              r"    func refresh\(updateProgress: Bool = true\) \{.*?"
+              r"\n    \}\n\n    func seek\(to fraction: Double\)"
+          )
+          replacement = """    func refresh(updateProgress: Bool = true) {
+                  let current = player.time.intValue
+                  currentMilliseconds = max(0, Int(current))
+                  if let media = player.media {
+                      durationMilliseconds = max(0, Int(media.length.intValue))
+                  }
+                  if updateProgress {
+                      if durationMilliseconds > 0 {
+                          progress = min(1, max(0, Double(currentMilliseconds) / Double(durationMilliseconds)))
+                      } else {
+                          progress = Double(player.position)
+                      }
+                  }
+                  isPlaying = player.isPlaying
+              }
+
+              func seek(to fraction: Double)"""
+          updated, count = re.subn(pattern, replacement, source, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit("Could not find PlayerController.refresh() to patch")
+          updated = updated.replace(
+              "player.position = Float(clamped)",
+              "player.position = clamped",
+          )
+          source_path.write_text(updated)
+          print("Patched PlayerController.refresh() for the current VLCKit API.")
           PY
-          grep -n "player.time.intValue\|player.position = clamped" "$RUNNER_TEMP/mediaplayer-source/MediaPlayer_iPad/MediaPlayer/PlayerScreen.swift"
+          sed -n '32,70p' "$RUNNER_TEMP/mediaplayer-source/MediaPlayer_iPad/MediaPlayer/PlayerScreen.swift"
 
       - name: Show Xcode version
         run: xcodebuild -version
