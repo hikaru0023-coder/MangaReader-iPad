@@ -13,6 +13,7 @@ on:
       - 'scripts/add-night-reading-mode.py'
       - 'scripts/add-wifi-folder-management.py.xz.b64'
       - 'scripts/remove-auto-page-and-sort-comics.py.xz.b64'
+      - 'scripts/recover-imported-comics.py'
       - 'overlay/wifi-lzma-*.txt'
 
 concurrency:
@@ -138,6 +139,11 @@ jobs:
           PY
           python3 "$RUNNER_TEMP/remove-auto-page-and-sort-comics.py" \
             "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
+
+      - name: Recover comic files and repair saved library paths
+        run: |
+          set -euo pipefail
+          python3 "$GITHUB_WORKSPACE/scripts/recover-imported-comics.py" "$PROJECT_DIR/MangaReader-iPad/MangaReaderApp.swift"
 
       - name: Resolve Swift package dependencies
         run: |
